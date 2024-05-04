@@ -1,45 +1,47 @@
 #!/usr/bin/python3
-"""
-Flask App that add a new feature: show and hide reviews
-"""
-from flask import Flask, render_template, url_for
+""" Starts a Flash Web Application """
 from models import storage
-import uuid;
-
-
+from models.state import State
+from models.city import City
+from models.amenity import Amenity
+from models.place import Place
+from os import environ
+from flask import Flask, render_template
+import uuid
 app = Flask(__name__)
-app.url_map.strict_slashes = False
-port = 5000
-host = '0.0.0.0'
+# app.jinja_env.trim_blocks = True
+# app.jinja_env.lstrip_blocks = True
 
 
 @app.teardown_appcontext
-def teardown_db(exception):
-    """
-    handle close sessions
-    """
+def close_db(error):
+    """ Remove the current SQLAlchemy Session """
     storage.close()
 
 
-@app.route('/101-hbnb')
-def hbnb_filters_on(the_id=None):
-    """
-    handles request to handle 101-hbnb.html
-    """
-    state_objs = storage.all('State').values()
-    states = dict([state.name, state] for state in state_objs)
-    amens = storage.all('Amenity').values()
-    places = storage.all('Place').values()
-    users = dict([user.id, "{} {}".format(user.first_name, user.last_name)]
-                 for user in storage.all('User').values())
-    return render_template('101-hbnb.html',
-                           cache_id=uuid.uuid4(),
-                           states=state_objs,
-                           amens=amens,
+@app.route('/101-hbnb/', strict_slashes=False)
+def hbnb():
+    """ HBNB is alive! """
+    states = storage.all(State).values()
+    states = sorted(states, key=lambda k: k.name)
+    st_ct = []
+
+    for state in states:
+        st_ct.append([state, sorted(state.cities, key=lambda k: k.name)])
+
+    amenities = storage.all(Amenity).values()
+    amenities = sorted(amenities, key=lambda k: k.name)
+
+    places = storage.all(Place).values()
+    places = sorted(places, key=lambda k: k.name)
+
+    return render_template('0-hbnb.html',
+                           states=st_ct,
+                           amenities=amenities,
                            places=places,
-                           users=users)
+                           cache_id=uuid.uuid4())
+
 
 if __name__ == "__main__":
-    """
-    MAIN Functions"""
-    app.run(host=host, port=port)
+    """ Main Function """
+    app.run(host='0.0.0.0', port=5001)
